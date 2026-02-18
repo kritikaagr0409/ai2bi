@@ -1,25 +1,29 @@
-from langchain_openai import ChatOpenAI
+from langchain_ollama import ChatOllama
 from langchain_core.messages import SystemMessage, HumanMessage
+from backend.models import InsightRequest, InsightResult
 
-from ..models import InsightRequest, InsightResult
-from ..config import OPENAI_API_KEY
-
-llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY, temperature=0.3)
+llm = ChatOllama(model="mistral")
 
 
-def insight_node(input: InsightRequest) -> InsightResult:
+def generate_insight(request: InsightRequest) -> InsightResult:
+    if not request.rows:
+        return InsightResult(insight="No data available.")
+
+    sample = request.rows[:5]
+
     messages = [
         SystemMessage(content="You are a business analyst."),
         HumanMessage(content=f"""
-User Query: {input.query}
+User Question:
+{request.query}
 
 Data Sample:
-{input.rows[:5]}
+{sample}
 
-Provide a short business insight summary.
+Provide short business insight.
 """)
     ]
 
-    response = llm(messages)
+    response = llm.invoke(messages)
 
-    return InsightResult(summary=response.content.strip())
+    return InsightResult(insight=response.content.strip())
